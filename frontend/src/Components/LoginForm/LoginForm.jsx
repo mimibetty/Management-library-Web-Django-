@@ -24,13 +24,17 @@ const LoginForm = () => {
 
             const { username, role } = res.data;
             console.log('auth', username, role);
-            
+            showNotification("Login successful","success");
           
             // Lưu thông tin đăng nhập
             setAuthInfo(username, role);
-            navigate("/Home");
+            if(role==0){
+              navigate("/home/user");
+
+            }
+            else navigate("/home");
           } else{
-            showNotification("No record","error");
+            showNotification("Does not exist", "error");
           }
         })
         .catch((err) => console.log(err));

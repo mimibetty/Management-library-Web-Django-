@@ -21,7 +21,11 @@ const Create = () => {
   const [selectedClass, setSelectedClass] = useState(localStorage.getItem("selectedClass") || "");
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState("");
-
+  const isEmailValid = (email) => {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailPattern.test(email);
+  };
+  
   // Xử lý khi người dùng chọn file ảnh
   const handleFileChange = useCallback((e) => {
     const file = e.target.files[0];
@@ -40,15 +44,21 @@ const Create = () => {
 
   // Sử dụng useCallback cho handleInputChange
   const handleInputChange = useCallback((setter) => (event) => {
+    
     const { name, value } = event.target;
     setter(value);
     localStorage.setItem(name, value);
+
   }, []);
 
   // Xử lý lưu thông tin người dùng
   const handleSave = useCallback(async (e) => {
     e.preventDefault();
-
+    if (!isEmailValid(email)) {
+      console.log("Email is invalid");
+      showNotification("Email is invalid", "error");
+      return;
+    }
     // Kiểm tra các trường để đảm bảo chúng không được để trống
     if (!uid || !name || !email || !id || !birthDate || !gender || !selectedFid || !selectedClass) {
         showNotification("All fields are required.", "error");
@@ -87,11 +97,14 @@ const Create = () => {
         localStorage.setItem("avatarImage", avatarPreviewUrl);
         navigate("/home/account");
     } catch (error) {
-        showNotification("ID sinh viên đã tồn tại", "error");
+        showNotification("UID already exist", "error");
     }
   }, [
     uid, name, email, id, birthDate, gender, selectedFid, selectedClass, avatarFile, showNotification, navigate
   ]);
+  const handleCancel = () => {
+    navigate("/home/studentmanagement");
+  };
 
   // Sử dụng useEffect để khôi phục lại avatarPreviewUrl từ localStorage
   useEffect(() => {
@@ -162,7 +175,7 @@ const Create = () => {
   };
 
   return (
-    <div>
+    <div class="full-width">
       <div className="header">Create Users</div>
       <div className="profile-container">
         <div className="profile-header">
@@ -303,7 +316,7 @@ const Create = () => {
                 <button type="button" className="btn-save" onClick={handleSave}>
                   Save
                 </button>
-                <button type="button" className="btn-cancel">
+                <button type="button" className="btn-cancel" onClick={handleCancel}>
                   Cancel
                 </button>
               </div>

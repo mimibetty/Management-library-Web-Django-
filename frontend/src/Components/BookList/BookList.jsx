@@ -9,6 +9,8 @@ import ReactModal from "react-modal";
 import { useNavigate } from "react-router-dom";
 import AdvancedSearch from "./AdvancedSearch";
 import { useNotification } from "../Noti/Noti";
+import { getAuthInfo } from "../LoginForm/auth";
+
 export default function BookList() {
   const [books, setBooks] = useState([]);
   const [selectedBooks, setSelectedBooks] = useState([]); // Danh sách sách được chọn
@@ -16,7 +18,10 @@ export default function BookList() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [SortOption, setSortOption] = useState("");
-  const {showNotification}=useNotification();
+
+  const { role } = getAuthInfo();
+  const { showNotification } = useNotification();
+
   // Hàm để lấy sách theo tag hoặc tất cả sách
   const fetchBooksByTag = async (tag) => {
     try {
@@ -97,7 +102,6 @@ export default function BookList() {
     setSelectedBook(null);
   };
 
-  // Hàm để xử lý tick chọn sách
   const handleBookCheckboxChange = (book) => {
     if (selectedBooks.includes(book)) {
       // Nếu sách đã được chọn, bỏ chọn
@@ -107,6 +111,7 @@ export default function BookList() {
       setSelectedBooks([...selectedBooks, book]);
     }
   };
+
   const navigate = useNavigate();
 
   const handleAddBook = () => {
@@ -122,22 +127,28 @@ export default function BookList() {
   // Hàm xóa sách (ví dụ)
   const deleteBooks = async () => {
     if (selectedBooks.length === 0) {
-      showNotification("No books selected for deletion.","error");
+      console.log("No books selected for deletion.");
+
       return;
     }
+    console.log(selectedBooks); // Print selectedBooks to console
+    const bookIds = selectedBooks.map((book) => book.id); // Retrieve book IDs
 
     try {
-      const bookIds = selectedBooks.map((book) => book.id);
       const response = await axios.post("http://127.0.0.1:8000/delete_books", {
         ids: bookIds,
       });
 
       if (response.data.success) {
-        showNotification("Books deleted successfully.","success");
-        fetchAllBooks(); // Cập nhật lại danh sách sách
+        showNotification("Books deleted successfully.", "success");
+        fetchAllBooks(); // Update the book list
         setSelectedBooks([]);
       } else {
-        showNotification("Failed to delete books:", response.data.message,"error");
+        showNotification(
+          "Failed to delete books:",
+          response.data.message,
+          "error"
+        );
       }
     } catch (error) {
       showNotification("Error deleting books:", "error");
@@ -146,32 +157,18 @@ export default function BookList() {
 
   return (
     <div className="booklist-page">
-      {/* Thành phần Tags */}
-     
-        <Tags onTagSelect={fetchBooksByTag} />
-     
-     
-        <div className="booklist-page-container">
-          <div className="book-actions">
-            <button onClick={handleAddBook}>Thêm sách</button>
-            <button onClick={() => deleteBooks()}>Xóa sách</button>
-          </div>
-        </div>
-    
+      <Tags onTagSelect={fetchBooksByTag} />
 
-      <div className="search-sort-container row">
-        <div className="search-box col-md-6">
-          <input
-            type="text"
-            placeholder="Tìm kiếm sách ..."
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="search-input"
-          />
-          <BiSearch className="search-icon" />
+      <div className="search-sort-container">
+        <div className="booklist-page-container">
+          {role == 1 && (
+            <div className="book-actions-1">
+              <button onClick={handleAddBook}>Thêm sách</button>
+              <button onClick={() => deleteBooks()}>Xóa sách</button>
+            </div>
+          )}
         </div>
-        {/* <AdvancedSearch/> */}
-        <div className="sort-column col-md-6">
+        <div className="sort-column">
           <select
             className="sort-dropdown"
             value={SortOption}
@@ -184,10 +181,20 @@ export default function BookList() {
             <option value="quantity-desc">Số lượng (Giảm dần)</option>
           </select>
         </div>
+        <div className="search-box">
+          <input
+            type="text"
+            placeholder="Tìm kiếm sách ..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="search-input"
+          />
+          <BiSearch className="search-icon" />
+        </div>
       </div>
       <section className="card-container">
         {books.map((book, index) => (
-          <section key={index} className="card">
+          <section key={index} className="book-card">
             <img
               src={`data:image/png;base64,${book.book_image}`}
               className="card-img"
@@ -206,16 +213,17 @@ export default function BookList() {
                 <span className="quantity-value">{book.quantity}</span>
               </div>
             </div>
-            <input
-              type="checkbox"
-              className="checkbox"
-              checked={selectedBooks.includes(book)}
-              onChange={() => handleBookCheckboxChange(book)}
-            />
+            <div className="checkbox-container">
+              <input
+                type="checkbox"
+                className="checkbox"
+                checked={selectedBooks.includes(book)}
+                onChange={() => handleBookCheckboxChange(book)}
+              />
+            </div>
           </section>
         ))}
       </section>
-
 
       <ReactModal
         isOpen={isModalOpen}
@@ -257,13 +265,22 @@ export default function BookList() {
                 <span className="author-label">Mô tả: </span>
                 <span className="author-value">{selectedBook.description}</span>
               </div>
+
               <div className="modal-footer">
-                <button
+                {/* <button
                   className="edit-button-1"
                   onClick={() => handleEditBook(selectedBook.id)}
                 >
                   Sửa sách
-                </button>
+                </button> */}
+                {role == 1 && (
+                  <button
+                    className="edit-button-1"
+                    onClick={() => handleEditBook(selectedBook.id)}
+                  >
+                    Sửa sách
+                  </button>
+                )}
 
                 <button className="close-button-2" onClick={closeModal}>
                   Đóng
